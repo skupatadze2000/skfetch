@@ -1,0 +1,54 @@
+#!/bin/sh
+# SKfetch - sigma fetch which fast and mogs every other
+
+# Catppuccin Mocha Color Accents
+MAUVE="\033[38;5;147m"
+PINK="\033[38;5;211m"
+BLUE="\033[38;5;117m"
+GREEN="\033[38;5;115m"
+RESET="\033[0m"
+BOLD="\033[1m"
+
+# 1. Fetch System Information Instantly
+USER_HOST="$(whoami)@$(hostname)"
+OS="$(grep '^PRETTY_NAME=' /etc/os-release | cut -d'"' -f2 2>/dev/null)"
+[ -z "$OS" ] && OS="$(uname -s)"
+KERNEL="$(uname -r)"
+
+# Fast Uptime calculation from system files
+if [ -f /proc/uptime ]; then
+    up_secs=$(cut -d. -f1 /proc/uptime)
+    ut_h=$((up_secs / 3600))
+    ut_m=$(( (up_secs % 3600) / 60 ))
+    UPTIME="${ut_h}h ${ut_m}m"
+else
+    UPTIME="$(uptime | awk -F, '{print $1}' | awk '{print $3,$4}')"
+fi
+
+# Alpine Linux APK Package Count
+if [ -f /sbin/apk ]; then
+    PKGS="$(apk info 2>/dev/null | wc -l)"
+else
+    PKGS="Unknown"
+fi
+
+# Low-overhead Memory Parsing
+if [ -f /proc/meminfo ]; then
+    mem_total=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+    mem_free=$(grep MemFree /proc/meminfo | awk '{print $2}')
+    mem_buffers=$(grep Buffers /proc/meminfo | awk '{print $2}')
+    mem_cached=$(grep ^Cached /proc/meminfo | awk '{print $2}')
+    mem_used=$((mem_total - mem_free - mem_buffers - mem_cached))
+    MEM="$((mem_used / 1024))M / $((mem_total / 1024))M"
+else
+    MEM="Unknown"
+fi
+
+# 2. Render the Fetch UI
+echo -e "  ${MAUVE}┌─┐┬┌─${RESET}   ${BOLD}${PINK}${USER_HOST}${RESET}"
+echo -e "  ${MAUVE}└─┐├┴┐${RESET}   ${BLUE}os     ${RESET}${OS}"
+echo -e "  ${MAUVE}└─┘┴ ┴${RESET}   ${BLUE}kernel ${RESET}${KERNEL}"
+echo -e "            ${BLUE}uptime ${RESET}${UPTIME}"
+echo -e "            ${BLUE}pkgs   ${RESET}${PKGS}"
+echo -e "            ${BLUE}memory ${RESET}${MEM}"
+echo -e "            ${MAUVE}●${PINK} ●${BLUE} ●${GREEN} ●${RESET}"
